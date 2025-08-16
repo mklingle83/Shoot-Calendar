@@ -1,0 +1,179 @@
+let events = JSON.parse(localStorage.getItem("events")) || [];
+let currentDate = new Date();
+let editingEventId = null;
+
+const calendar = document.getElementById("calendar");
+const monthYear = document.getElementById("monthYear");
+const viewSelect = document.getElementById("viewSelect");
+
+document.getElementById("prevBtn").onclick = () => changeDate(-1);
+document.getElementById("nextBtn").onclick = () => changeDate(1);
+document.getElementById("addEventBtn").onclick = () => openModal();
+document.getElementById("cancelBtn").onclick = () => closeModal();
+document.getElementById("saveEventBtn").onclick = saveEvent;
+document.getElementById("deleteEventBtn").onclick = deleteEvent;
+viewSelect.onchange = renderCalendar;
+
+function saveEvents() {
+  localStorage.setItem("events", JSON.stringify(events));
+}
+
+function changeDate(offset) {
+  if (viewSelect.value === "month") {
+    currentDate.setMonth(currentDate.getMonth() + offset);
+  } else if (viewSelect.value === "week") {
+    currentDate.setDate(currentDate.getDate() + offset * 7);
+  } else {
+    currentDate.setDate(currentDate.getDate() + offset);
+  }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  calendar.innerHTML = "";
+  const view = viewSelect.value;
+
+  if (view === "month") {
+    renderMonthView();
+  } else if (view === "week") {
+    renderWeekView();
+  } else if (view === "day") {
+    renderDayView();
+  } else {
+    renderAgendaView();
+  }
+}
+
+function renderMonthView() {
+  calendar.className = "month-view";
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  monthYear.textContent = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement("div");
+    calendar.appendChild(empty);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement("div");
+    cell.className = "day-cell";
+    cell.innerHTML = `<strong>${d}</strong>`;
+    const dateStr = new Date(year, month, d).toISOString().split("T")[0];
+    renderEvents(cell, dateStr);
+    cell.onclick = () => openModal(null, dateStr);
+    calendar.appendChild(cell);
+  }
+}
+
+function renderWeekView() {
+  calendar.className = "week-view";
+  monthYear.textContent = "Week of " + currentDate.toDateString();
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(currentDate);
+    day.setDate(currentDate.getDate() - currentDate.getDay() + i);
+    const dateStr = day.toISOString().split("T")[0];
+    const cell = document.createElement("div");
+    cell.className = "week-cell";
+    cell.innerHTML = `<strong>${day.toDateString()}</strong>`;
+    renderEvents(cell, dateStr);
+    cell.onclick = () => openModal(null, dateStr);
+    calendar.appendChild(cell);
+  }
+}
+
+function renderDayView() {
+  calendar.className = "day-view";
+  monthYear.textContent = currentDate.toDateString();
+  const dateStr = currentDate.toISOString().split("T")[0];
+  const cell = document.createElement("div");
+  cell.className = "day-view";
+  renderEvents(cell, dateStr);
+  calendar.appendChild(cell);
+}
+
+function renderAgendaView() {
+  calendar.className = "agenda-view";
+  monthYear.textContent = "Agenda";
+  const upcoming = events.sort((a, b) => new Date(a.start) - new Date(b.start));
+  upcoming.forEach(ev => {
+    const item = document.createElement("div");
+    item.className = "agenda-item";
+    item.innerHTML = `<strong>${ev.title}</strong> (${ev.client})<br>${new Date(ev.start).toLocaleString()} - ${new Date(ev.end).toLocaleString()}`;
+    item.onclick = () => openModal(ev.id);
+    calendar.appendChild(item);
+  });
+}
+
+function renderEvents(container, dateStr) {
+  events.filter(e => e.start.split("T")[0] === dateStr)
+    .forEach(ev => {
+      const el = document.createElement("div");
+      el.className = `event ${ev.category.toLowerCase()}`;
+      el.textContent = `${ev.title} (${ev.client})`;
+      el.onclick = (e) => { e.stopPropagation(); openModal(ev.id); };
+      container.appendChild(el);
+    });
+}
+
+function openModal(eventId = null, dateStr = null) {
+  document.getElementById("eventModal").classList.remove("hidden");
+  editingEventId = eventId;
+  if (eventId) {
+    const ev = events.find(e => e.id === eventId);
+    document.getElementById("modalTitle").textContent = "Edit Event";
+    document.getElementById("eventTitle").value = ev.title;
+    document.getElementById("eventCategory").value = ev.category;
+    document.getElementById("eventClient").value = ev.client;
+    document.getElementById("eventStart").value = ev.start;
+    document.getElementById("eventEnd").value = ev.end;
+    document.getElementById("eventCost").value = ev.cost;
+    document.getElementById("eventDeposit").value = ev.deposit;
+    document.getElementById("deleteEventBtn").style.display = "inline-block";
+  } else {
+    document.getElementById("modalTitle").textContent = "Add Event";
+    document.querySelectorAll("#eventModal input, #eventModal select").forEach(input => input.value = "");
+    if (dateStr) {
+      document.getElementById("eventStart").value = dateStr + "T09:00";
+      document.getElementById("eventEnd").value = dateStr + "T10:00";
+    }
+    document.getElementById("deleteEventBtn").style.display = "none";
+  }
+}
+
+function closeModal() {
+  document.getElementById("eventModal").classList.add("hidden");
+}
+
+function saveEvent() {
+  const ev = {
+    id: editingEventId || Date.now(),
+    title: document.getElementById("eventTitle").value,
+    category: document.getElementById("eventCategory").value,
+    client: document.getElementById("eventClient").value,
+    start: document.getElementById("eventStart").value,
+    end: document.getElementById("eventEnd").value,
+    cost: document.getElementById("eventCost").value,
+    deposit: document.getElementById("eventDeposit").value
+  };
+  if (editingEventId) {
+    events = events.map(e => e.id === editingEventId ? ev : e);
+  } else {
+    events.push(ev);
+  }
+  saveEvents();
+  closeModal();
+  renderCalendar();
+}
+
+function deleteEvent() {
+  events = events.filter(e => e.id !== editingEventId);
+  saveEvents();
+  closeModal();
+  renderCalendar();
+}
+
+renderCalendar();
