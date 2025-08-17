@@ -108,15 +108,27 @@ function renderAgendaView() {
   });
 }
 
-function renderEvents(container, dateStr) {
-  events.filter(e => e.start.split("T")[0] === dateStr)
-    .forEach(ev => {
-      const el = document.createElement("div");
-      el.className = `event ${ev.category.toLowerCase()}`;
-      el.textContent = `${ev.title} (${ev.client})`;
-      el.onclick = (e) => { e.stopPropagation(); openModal(ev.id); };
-      container.appendChild(el);
-    });
+function renderEvents(events) {
+  const eventList = document.getElementById("eventList");
+  eventList.innerHTML = "";
+
+  events.forEach((event, index) => {
+    const eventItem = document.createElement("div");
+    eventItem.className = "event-item";
+
+    eventItem.innerHTML = `
+      <div><strong>Client:</strong> ${event.client}</div>
+      <div><strong>Start:</strong> ${event.start}</div>
+      <div><strong>End:</strong> ${event.end}</div>
+      <div><strong>Total Cost:</strong> $${event.totalCost}</div>
+      <div><strong>Deposit:</strong> $${event.deposit}</div>
+      <div><strong>Location:</strong> ${event.location}</div>
+      <button onclick="editEvent(${index})">Edit</button>
+      <button onclick="deleteEvent(${index})">Delete</button>
+    `;
+
+    eventList.appendChild(eventItem);
+  });
 }
 
 function openModal(eventId = null, dateStr = null) {
