@@ -66,3 +66,20 @@ button {
   background: #dc3545;
   color: white;
 }
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.event-list li {
+  padding: 8px 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.event-list li strong {
+  display: inline-block;
+  width: 90px; /* makes labels align neatly */
+  font-weight: 600;
+  text-align: left;
+}
