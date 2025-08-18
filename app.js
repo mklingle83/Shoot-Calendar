@@ -30,19 +30,67 @@ function changeDate(offset) {
 }
 
 function renderCalendar() {
+  const calendar = document.getElementById("calendar");
   calendar.innerHTML = "";
-  const view = viewSelect.value;
 
-  if (view === "month") {
-    renderMonthView();
-  } else if (view === "week") {
-    renderWeekView();
-  } else if (view === "day") {
-    renderDayView();
-  } else {
-    renderAgendaView();
+  const monthYear = document.getElementById("monthYear");
+  const month = currentDate.getMonth();
+  const year = currentDate.getFullYear();
+
+  // Month + year label
+  monthYear.textContent = currentDate.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  // First day of month & how many days in month
+  const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun, 1 = Mon...
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Grid container
+  const grid = document.createElement("div");
+  grid.classList.add("calendar-grid");
+
+  // Weekday labels
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  weekdays.forEach(day => {
+    const wd = document.createElement("div");
+    wd.classList.add("weekday");
+    wd.textContent = day;
+    grid.appendChild(wd);
+  });
+
+  // Blank cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.classList.add("day-cell", "empty");
+    grid.appendChild(emptyCell);
   }
+
+  // Fill days 1 → daysInMonth
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.classList.add("day-cell");
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    cell.setAttribute("data-date", dateStr);
+
+    cell.innerHTML = `<span class="date-label">${day}</span>`;
+
+    // Click to add new event
+    cell.addEventListener("click", () => {
+      openEventForm(dateStr);
+    });
+
+    grid.appendChild(cell);
+  }
+
+  // Attach grid
+  calendar.appendChild(grid);
+
+  // Render events after grid is ready
+  renderEvents();
 }
+
 
 function renderMonthView() {
   calendar.className = "month-view";
