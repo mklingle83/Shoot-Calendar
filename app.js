@@ -108,28 +108,50 @@ function renderAgendaView() {
   });
 }
 
-function renderEvents(events) {
-  const eventList = document.getElementById("eventList");
-  eventList.innerHTML = "";
+// Render events inside calendar cells
+function renderEvents() {
+  const calendarCells = document.querySelectorAll(".day-cell");
+  calendarCells.forEach(cell => {
+    const date = cell.getAttribute("data-date");
+    const dayEvents = events.filter(ev => ev.date === date);
 
-  events.forEach((event, index) => {
-    const eventItem = document.createElement("div");
-    eventItem.className = "event-item";
+    cell.innerHTML = `<span class="date-label">${new Date(date).getDate()}</span>`;
 
-    eventItem.innerHTML = `
-      <div><strong>Client:</strong> ${event.client}</div>
-      <div><strong>Start:</strong> ${event.start}</div>
-      <div><strong>End:</strong> ${event.end}</div>
-      <div><strong>Total Cost:</strong> $${event.totalCost}</div>
-      <div><strong>Deposit:</strong> $${event.deposit}</div>
-      <div><strong>Location:</strong> ${event.location}</div>
-      <button onclick="editEvent(${index})">Edit</button>
-      <button onclick="deleteEvent(${index})">Delete</button>
-    `;
-
-    eventList.appendChild(eventItem);
+    dayEvents.forEach(ev => {
+      const eventEl = document.createElement("div");
+      eventEl.classList.add("event", ev.category); // category class
+      eventEl.textContent = ev.title;
+      eventEl.addEventListener("click", () => openEventModal(ev));
+      cell.appendChild(eventEl);
+    });
   });
 }
+
+// Show event details in the new details modal
+function openEventModal(event) {
+  const detailsModal = document.getElementById("eventDetailsModal");
+  const detailsContainer = document.getElementById("eventDetailsContainer");
+
+  // Format event details
+  detailsContainer.innerHTML = `
+    <p><strong>Title:</strong> ${event.title}</p>
+    <p><strong>Category:</strong> ${event.category}</p>
+    <p><strong>Client:</strong> ${event.client || "N/A"}</p>
+    <p><strong>Start:</strong> ${new Date(event.start).toLocaleString()}</p>
+    <p><strong>End:</strong> ${new Date(event.end).toLocaleString()}</p>
+    <p><strong>Total Cost:</strong> $${event.cost || 0}</p>
+    <p><strong>Deposit:</strong> $${event.deposit || 0}</p>
+  `;
+
+  // Show modal
+  detailsModal.classList.remove("hidden");
+}
+
+// Close details modal
+document.getElementById("closeDetailsBtn").addEventListener("click", () => {
+  document.getElementById("eventDetailsModal").classList.add("hidden");
+});
+
 
 function openModal(eventId = null, dateStr = null) {
   document.getElementById("eventModal").classList.remove("hidden");
